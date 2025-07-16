@@ -1,0 +1,95 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+
+entity testbench_tx is
+
+generic(
+    clk_freq :  integer := 100_000_000;
+    baud_rate : integer := 115_200;      
+    stopbit :   integer := 2
+    );
+   
+end testbench_tx;
+
+architecture Behavioral of testbench_tx is
+
+component Tx
+
+    generic(
+    clk_freq :  integer := 100_000_000;
+    baud_rate : integer := 115_200;      
+    stopbit :   integer := 2
+    );
+   
+    port(
+    clk :       in std_logic;
+    data_in :   in std_logic_vector(7 downto 0);
+    tx_start :  in std_logic;
+    tx_out :    out std_logic;
+    tx_done :   out std_logic;
+    parity_tx  : out std_logic
+    );
+   
+end component;
+
+signal clk : std_logic := '0';                        
+signal data_in : std_logic_vector(7 downto 0) := (others=>'0');
+signal tx_start : std_logic := '0';          
+signal tx_out : std_logic;                    
+signal tx_done : std_logic;  
+signal parity_tx : std_logic;
+
+constant clk_period : time := 10 ns;
+constant bit_timer_lim : integer := clk_freq/baud_rate ;    
+     
+begin
+
+DUT : Tx
+               
+generic map(
+clk_freq  => clk_freq,
+baud_rate => baud_rate,
+stopbit   => stopbit
+)
+
+port map(
+clk       =>  clk,    
+data_in   =>  data_in,
+tx_start  =>  tx_start,
+tx_out    =>  tx_out,
+tx_done   =>  tx_done,
+parity_tx =>  parity_tx  
+);
+
+clk_gen : process begin
+clk <= '0';          
+wait for clk_period/2;
+clk <= '1';          
+wait for clk_period/2;
+end process;        
+
+STIMULI : process
+begin
+   
+    data_in <= x"00";
+    tx_start <= '0';
+    wait for clk_period * 20;
+    data_in <= "01101101";
+    tx_start <= '1';
+    wait for clk_period;
+    tx_start <= '0';
+    wait for clk_period*bit_timer_lim*11; --mininum amount of time must passed !
+    data_in <= "01010101";
+    tx_start <= '1';
+    wait for clk_period;
+    tx_start <= '0';
+    wait for clk_period*bit_timer_lim*11; --mininum amount of time must passed !
+ 
+assert false
+report "SIM DONE"
+severity failure;
+
+end process STIMULI;
+
+end Behavioral;
