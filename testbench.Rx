@@ -1,0 +1,99 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+entity testbench_rx is
+generic (
+clk_freq          : integer := 100_000_000;
+baud_rate         : integer := 115_200;
+stopbit         : integer := 2
+);
+end testbench_rx;
+
+architecture rtl of testbench_rx is
+
+component Rx
+
+    generic(
+    clk_freq :  integer := 100_000_000;
+    baud_rate : integer := 115_200;      
+    stopbit :   integer := 2
+    );
+   
+    port(
+    clk :           in std_logic;
+    received_bit :  in std_logic;
+    parity_in    : in std_logic;
+    received_byte : out std_logic_vector(7 downto 0);
+    rx_done :       out std_logic;
+    parity_rx  :   out std_logic
+    );
+ 
+end component;
+
+signal  clk           :  std_logic := '0';
+signal  received_bit  :  std_logic := '1';
+signal  parity_in     : std_logic :=  '0';
+signal  parity_rx     : std_logic;
+signal  received_byte :  std_logic_vector (7 downto 0);
+signal  rx_done       :  std_logic;
+       
+constant clk_period     : time := 10 ns;
+constant bit_timer_lim : integer := clk_freq/baud_rate ;
+
+constant hex43          : std_logic_vector (10 downto 0) := "11" & x"2c" & '0';
+constant hexA5          : std_logic_vector (10 downto 0) := "11" & x"6f" & '0';
+
+begin
+
+DUT : Rx
+generic map(
+clk_freq          => clk_freq,
+baud_rate         => baud_rate,
+stopbit         => stopbit
+)
+port map(
+clk                     => clk,
+received_bit      => received_bit,
+parity_in       => parity_in,
+received_byte     => received_byte,
+rx_done             => rx_done,
+parity_rx      => parity_rx
+);
+
+P_CLKGEN : process begin
+
+clk   <= '0';
+wait for clk_period/2;
+clk   <= '1';
+wait for clk_period/2;
+
+end process P_CLKGEN;
+
+STIMULI : process begin
+
+wait for clk_period*10;
+
+for i in 0 to 10 loop
+    parity_in <= '1';
+      received_bit <= hex43(i);
+      wait for clk_period*bit_timer_lim;
+end loop;
+
+wait for 100 ns;
+
+for i in 0 to 10 loop
+    parity_in <= '0';
+      received_bit <= hexA5(i);
+      wait for clk_period*bit_timer_lim;
+end loop;
+
+wait for 100 ns;
+
+assert false
+report "SIM DONE"
+severity failure;
+
+end process STIMULI;
+
+
+end rtl;
