@@ -46,7 +46,7 @@ module Traffic (
 
             S1: begin
 
-                if (timer < 3'd5) begin
+                if (timer < 3'd4) begin
                     next_state = S1;
                     next_timer = timer + 1'b1;
                 end else begin
@@ -65,7 +65,7 @@ module Traffic (
 
             S3: begin
          
-                if (timer < 3'd5) begin
+                if (timer < 3'd4) begin
                     next_state = S3;
                     next_timer = timer + 1'b1;
                 end else begin
